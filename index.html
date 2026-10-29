@@ -219,7 +219,7 @@ function handleInput(text) {
 
 // ===== NAYA API FETCH (Error Fix) =====
 function askAI(input) {
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + API_Key;
   
   fetch(url, {
     method: 'POST',
