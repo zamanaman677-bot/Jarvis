@@ -1,1 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000814">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>JARVIS AI Assistant</title>
 
+<!-- PWA Manifest (APK banane ke liye zaroori) -->
+<link rel="manifest" href='data:application/manifest+json,{"name":"JARVIS AI","short_name":"JARVIS","start_url":".","display":"standalone","background_color":"%23000814","theme_color":"%23000814","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2740%27 fill=%27%2300d4ff%27/%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--primary:#00d4ff;--primary-dark:#0088cc;--bg:#000814;--text:#e0f7ff;--glow:0 0 20px rgba(0,212,255,.6)}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);user-select:none;-webkit-user-select:none}
+body{display:flex;flex-direction:column;background:radial-gradient(circle at 50% 30%,#001d3d 0%,#000814 70%)}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.05) 1px,transparent 1px);background-size:30px 30px;animation:gridMove 20s linear infinite;pointer-events:none;z-index:0}
+@keyframes gridMove{0%{transform:translate(0,0)}100%{transform:translate(30px,30px)}}
+header{position:relative;z-index:10;padding:15px 20px 5px;text-align:center}
+.logo{font-size:1.4rem;font-weight:700;letter-spacing:6px;color:var(--primary);text-shadow:var(--glow);animation:pulseText 3s ease-in-out infinite}
+@keyframes pulseText{0%,100%{opacity:1;text-shadow:0 0 20px rgba(0,212,255,.6)}50%{opacity:.7;text-shadow:0 0 8px rgba(0,212,255,.3)}}
+.status-bar{display:flex;justify-content:center;gap:20px;margin-top:5px;font-size:.7rem;letter-spacing:2px;color:rgba(0,212,255,.5);text-transform:uppercase}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;margin-right:6px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.reactor-container{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:5;padding:10px}
+.reactor{position:relative;width:180px;height:180px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s}
+.reactor:active{transform:scale(.95)}
+.ring{position:absolute;border-radius:50%;border:2px solid var(--primary);opacity:.3}
+.ring-1{width:100%;height:100%;border-style:dashed;animation:rotate 20s linear infinite}
+.ring-2{width:80%;height:80%;border-color:var(--primary-dark);animation:rotate 15s linear infinite reverse}
+.ring-3{width:60%;height:60%;border-style:dotted;animation:rotate 10s linear infinite}
+@keyframes rotate{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.core{width:50%;height:50%;border-radius:50%;background:radial-gradient(circle,var(--primary) 0%,var(--primary-dark) 50%,transparent 70%);box-shadow:0 0 40px var(--primary),0 0 80px rgba(0,212,255,.5),inset 0 0 30px rgba(255,255,255,.5);transition:all .3s;position:relative}
+.core::after{content:'';position:absolute;inset:20%;border-radius:50%;background:#fff;opacity:.8;filter:blur(8px)}
+.reactor.listening .core{background:radial-gradient(circle,#00ff88 0%,#00cc66 50%,transparent 70%);box-shadow:0 0 60px #00ff88,0 0 120px rgba(0,255,136,.6),inset 0 0 40px rgba(255,255,255,.6);animation:corePulse .8s ease-in-out infinite}
+.reactor.listening .ring{border-color:#00ff88;opacity:.6}
+.reactor.speaking .core{background:radial-gradient(circle,#ffaa00 0%,#ff6600 50%,transparent 70%);box-shadow:0 0 60px #ffaa00,0 0 120px rgba(255,170,0,.6),inset 0 0 40px rgba(255,255,255,.6);animation:corePulse .4s ease-in-out infinite}
+@keyframes corePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.hint{margin-top:15px;font-size:.8rem;letter-spacing:2px;color:rgba(0,212,255,.6);text-transform:uppercase;text-align:center;min-height:20px;padding:0 10px}
+.transcript-area{position:relative;z-index:10;padding:0 15px 10px;max-height:35vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:var(--primary-dark) transparent}
+.transcript-area::-webkit-scrollbar{width:4px}
+.transcript-area::-webkit-scrollbar-thumb{background:var(--primary-dark);border-radius:2px}
+.message{padding:10px 14px;border-radius:18px;font-size:.9rem;line-height:1.4;max-width:85%;animation:slideIn .3s ease-out;word-wrap:break-word}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.message.user{align-self:flex-end;background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#001d3d;font-weight:500;border-bottom-right-radius:4px}
+.message.jarvis{align-self:flex-start;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--text);border-bottom-left-radius:4px}
+.message.jarvis::before{content:'◈ ';color:var(--primary)}
+.input-area{position:relative;z-index:10;display:flex;align-items:center;gap:10px;padding:0 15px 15px}
+.input-box{flex:1;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:20px;padding:10px 15px;color:#fff;font-size:0.9rem;outline:none}
+.input-box::placeholder{color:rgba(0,212,255,.5)}
+.send-btn{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#000;border:none;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.send-btn:active{transform:scale(0.9)}
+.controls{position:relative;z-index:10;display:flex;justify-content:center;gap:20px;padding:0 15px 20px}
+.btn{width:45px;height:45px;border-radius:50%;border:1px solid rgba(0,212,255,.4);background:rgba(0,212,255,.08);color:var(--primary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;backdrop-filter:blur(10px)}
+.btn:active{transform:scale(.9);background:rgba(0,212,255,.2)}
+.btn svg{width:20px;height:20px;fill:currentColor}
+.btn.active{background:rgba(0,212,255,.3);box-shadow:0 0 15px rgba(0,212,255,.5)}
+.overlay{position:fixed;inset:0;background:rgba(0,8,20,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:40px;text-align:center;transition:opacity .4s}
+.overlay.hidden{opacity:0;pointer-events:none;display:none}
+.overlay h1{font-size:2rem;letter-spacing:8px;color:var(--primary);text-shadow:var(--glow);margin-bottom:20px}
+.overlay p{color:rgba(0,212,255,.7);margin-bottom:40px;line-height:1.6;max-width:300px}
+.start-btn{padding:16px 40px;border:2px solid var(--primary);background:transparent;color:var(--primary);font-size:1rem;letter-spacing:3px;text-transform:uppercase;border-radius:30px;cursor:pointer;transition:all .3s;font-weight:600}
+.start-btn:active{background:var(--primary);color:var(--bg);box-shadow:var(--glow)}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="overlay" id="overlay">
+<h1>J.A.R.V.I.S</h1>
+<p>Just A Rather Very Intelligent System. Tap to initialize voice interface.</p>
+<button class="start-btn" id="startBtn">INITIALIZE</button>
+</div>
+
+<header>
+<div class="logo">J.A.R.V.I.S</div>
+<div class="status-bar">
+<span><span class="status-dot"></span>Online</span>
+<span id="modeLabel">Standby</span>
+</div>
+</header>
+
+<div class="reactor-container">
+<div class="reactor" id="reactor">
+<div class="ring ring-1"></div>
+<div class="ring ring-2"></div>
+<div class="ring ring-3"></div>
+<div class="core"></div>
+</div>
+<div class="hint" id="hint">Tap reactor to speak</div>
+</div>
+
+<div class="transcript-area" id="transcript"></div>
+
+<div class="input-area">
+  <input type="text" id="userInput" class="input-box" placeholder="Type a message or tap reactor...">
+  <button class="send-btn" id="sendBtn">➤</button>
+</div>
+
+<div class="controls">
+<button class="btn" id="muteBtn"><svg viewBox="0 0 24 24" id="muteIcon"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg></button>
+<button class="btn" id="clearBtn"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+</div>
+
+<script>
+// =============================================
+// 🔑 YAHAN APNI API KEY DAALO (AQ. ya AIzaSy)
+// =============================================
+var API_KEY = "AQ.Ab8RN6IDT-MidKEgXDOT_JPokcrx2r3cTNwnHgR0xUNwS5pnbg";
+// =============================================
+
+var overlay = document.getElementById('overlay');
+var startBtn = document.getElementById('startBtn');
+var reactor = document.getElementById('reactor');
+var hint = document.getElementById('hint');
+var transcript = document.getElementById('transcript');
+var modeLabel = document.getElementById('modeLabel');
+var muteBtn = document.getElementById('muteBtn');
+var clearBtn = document.getElementById('clearBtn');
+var muteIcon = document.getElementById('muteIcon');
+var userInput = document.getElementById('userInput');
+var sendBtn = document.getElementById('sendBtn');
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var synth = window.speechSynthesis;
+var rec = null;
+var isListening = false;
+var isSpeaking = false;
+var isMuted = false;
+var initialized = false;
+
+function getVoice() {
+  var allVoices = synth.getVoices();
+  var bestHindi = allVoices.find(function(v){ return v.lang === 'hi-IN'; });
+  if (bestHindi) return bestHindi;
+  return allVoices.find(function(v){ return v.lang.indexOf('en') === 0; }) || allVoices[0];
+}
+
+function speak(text, cb) {
+  if (isMuted || !synth) { if (cb) cb(); return; }
+  synth.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  var v = getVoice();
+  if (v) u.voice = v;
+  u.rate = 1.0; 
+  u.pitch = 0.9; 
+  u.volume = 1;
+  u.lang = 'hi-IN';
+  u.onstart = function() { isSpeaking = true; reactor.classList.add('speaking'); modeLabel.textContent = 'Speaking'; };
+  u.onend = function() { isSpeaking = false; reactor.classList.remove('speaking'); modeLabel.textContent = 'Standby'; hint.textContent = 'Tap reactor to speak'; if (cb) cb(); };
+  u.onerror = function() { isSpeaking = false; reactor.classList.remove('speaking'); modeLabel.textContent = 'Standby'; if (cb) cb(); };
+  synth.speak(u);
+}
+
+function initRec() {
+  if (!SR) return null;
+  var r = new SR();
+  r.continuous = false;
+  r.interimResults = true;
+  r.lang = 'hi-IN'; 
+  var finalT = '';
+  r.onstart = function() { isListening = true; finalT = ''; reactor.classList.add('listening'); modeLabel.textContent = 'Listening'; hint.textContent = 'Listening...'; };
+  r.onresult = function(e) {
+    var interim = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      var t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalT += t;
+      else interim += t;
+    }
+    if (interim) hint.textContent = '"' + interim + '"';
+  };
+  r.onerror = function(e) {
+    isListening = false; reactor.classList.remove('listening'); modeLabel.textContent = 'Standby';
+    if (e.error === 'not-allowed') { hint.textContent = 'Mic denied'; addMsg('jarvis', 'I need microphone access.'); }
+    else { hint.textContent = 'Error, try again'; }
+  };
+  r.onend = function() {
+    isListening = false; reactor.classList.remove('listening');
+    if (finalT.trim()) handleInput(finalT.trim());
+    else { modeLabel.textContent = 'Standby'; hint.textContent = 'Tap reactor to speak'; }
+  };
+  return r;
+}
+
+function startL() {
+  if (isListening || isSpeaking) {
+    if (isSpeaking) { synth.cancel(); isSpeaking = false; reactor.classList.remove('speaking'); }
+    return;
+  }
+  if (!rec) rec = initRec();
+  try { rec.start(); } catch(e) { if (rec) { try { rec.abort(); } catch(err){} } rec = initRec(); try { rec.start(); } catch(e2){} }
+}
+
+function stopL() { if (rec && isListening) { try { rec.stop(); } catch(e){} } }
+
+function addMsg(sender, text) {
+  var m = document.createElement('div');
+  m.className = 'message ' + sender;
+  m.textContent = text;
+  transcript.appendChild(m);
+  transcript.scrollTop = transcript.scrollHeight;
+  while (transcript.children.length > 20) transcript.removeChild(transcript.firstChild);
+}
+
+function handleInput(text) {
+  addMsg('user', text);
+  modeLabel.textContent = 'Processing';
+  hint.textContent = 'Thinking...';
+  
+  if (text.toLowerCase().includes('hello') || text.toLowerCase().includes('hi')) {
+     var r = 'Hello bhai! Kya haal hai? Batao kya karna hai aaj?';
+     addMsg('jarvis', r); speak(r); return;
+  }
+  
+  askAI(text);
+}
+
+// ===== NAYA API FETCH (Error Fix) =====
+function askAI(input) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+  
+  fetch(url, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': API_KEY 
+    },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: input }] }],
+      systemInstruction: {
+        parts: [{
+          text: 'You are JARVIS, a highly intelligent and friendly AI. Talk like a close Indian friend (bhai/yaar). Reply in Hinglish if the user speaks Hindi. Show real emotions. Keep responses under 3 sentences.'
+        }]
+      },
+      generationConfig: { maxOutputTokens: 100, temperature: 0.8 }
+    })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.error) { 
+      addMsg('jarvis', 'Error: ' + data.error.message); 
+      return; 
+    }
+    if (data.candidates && data.candidates[0]) {
+      var txt = data.candidates[0].content.parts[0].text;
+      addMsg('jarvis', txt);
+      speak(txt);
+    }
+  })
+  .catch(function(err) { addMsg('jarvis', 'Network error, bhai.'); });
+}
+
+startBtn.addEventListener('click', function() {
+  overlay.classList.add('hidden');
+  initialized = true;
+  
+  setTimeout(function() {
+    var greeting = 'Good morning bhai, systems online. Kya karna hai aaj?';
+    addMsg('jarvis', greeting);
+    speak(greeting);
+  }, 400);
+});
+
+reactor.addEventListener('click', function() {
+  if (!initialized) return;
+  if (isSpeaking) { synth.cancel(); isSpeaking = false; reactor.classList.remove('speaking'); modeLabel.textContent = 'Standby'; return; }
+  if (isListening) stopL(); else startL();
+});
+
+sendBtn.addEventListener('click', function() {
+  if (userInput.value.trim() !== '') {
+    handleInput(userInput.value.trim());
+    userInput.value = '';
+  }
+});
+
+userInput.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter' && userInput.value.trim() !== '') {
+    handleInput(userInput.value.trim());
+    userInput.value = '';
+  }
+});
+
+muteBtn.addEventListener('click', function() {
+  isMuted = !isMuted;
+  muteBtn.classList.toggle('active', isMuted);
+  if (isMuted) { synth.cancel(); isSpeaking = false; reactor.classList.remove('speaking'); }
+});
+
+clearBtn.addEventListener('click', function() {
+  transcript.innerHTML = '';
+  addMsg('jarvis', 'Conversation cleared.');
+});
+
+// PWA Service Worker Registration (PWABuilder ke liye)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('data:text/javascript,self.addEventListener("install",e=>{self.skipWaiting()});self.addEventListener("activate",e=>{self.clients.claim()});self.addEventListener("fetch",e=>{});').catch(function(e){});
+}
+</script>
+</body>
+</html>
