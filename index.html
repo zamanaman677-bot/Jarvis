@@ -224,8 +224,9 @@ function askAI(input) {
   fetch(url, {
     method: 'POST',
     headers: { 
-      'Content-Type': 'application/json'
-    },
+  'Content-Type': 'application/json',
+  'x-goog-api-key': API_KEY 
+},
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: input }] }],
       systemInstruction: {
