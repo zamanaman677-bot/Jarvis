@@ -220,7 +220,7 @@ function handleInput(text) {
 // ===== UPDATED API FETCH FOR AQ. KEYS =====
 function askAI(input) {
   // Hum v1beta use kar rahe hain, lekin headers ke through key bhej rahe hain
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   
   fetch(url, {
     method: 'POST',
